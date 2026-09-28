@@ -1,8 +1,6 @@
-name: Custom Static Builds
+name: Custom Static Builds old
 
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 
 permissions:
