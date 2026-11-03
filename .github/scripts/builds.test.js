@@ -51,11 +51,11 @@ function fixture() {
   return { args, run, artifacts, workflow, outputs };
 }
 
-test('release allowlist has three x86-64 Core, two desktop GUI, and Android ARM64 artifacts', () => {
+test('release allowlist has four Core, two desktop GUI, and Android ARM64 artifacts', () => {
   const expected = expectedArtifacts();
-  assert.equal(expected.length, 6);
+  assert.equal(expected.length, 7);
   assert.deepEqual(expected.filter(a => a.kind === 'archive').map(a => a.name),
-    ['easytier-linux-x86_64.tar.gz', 'easytier-macos-x86_64.tar.gz', 'easytier-windows-x86_64.zip']);
+    ['easytier-linux-x86_64.tar.gz', 'easytier-linux-aarch64.tar.gz', 'easytier-macos-x86_64.tar.gz', 'easytier-windows-x86_64.zip']);
   assert.deepEqual(expected.filter(a => a.name.startsWith('easytier-gui-')).map(a => a.name),
     ['easytier-gui-macos-x86_64.dmg', 'easytier-gui-windows-x86_64.exe']);
   assert.deepEqual(expected.filter(a => a.name.startsWith('easytier-mobile-android-')).map(a => a.name),
@@ -73,10 +73,10 @@ test('release accepts completed full main pushes and selects only required artif
     f.artifacts.push({ id: f.artifacts.length + 1, name });
   }
   const result = await validate(f.args);
-  assert.deepEqual(result.artifactIds, Array.from({ length: 6 }, (_, i) => i + 1));
+  assert.deepEqual(result.artifactIds, Array.from({ length: 7 }, (_, i) => i + 1));
   assert.equal(f.outputs.artifact_ids, result.artifactIds.join(','));
   assert.equal(f.outputs.build_sha, commit);
-  const metadata = f.artifacts.slice(0, 6).map(({ name, digest }) => ({ name, digest }));
+  const metadata = f.artifacts.slice(0, 7).map(({ name, digest }) => ({ name, digest }));
   assert.deepEqual(result.artifactMetadata, metadata);
   assert.deepEqual(JSON.parse(f.outputs.artifact_metadata), metadata);
 });
@@ -300,7 +300,7 @@ test('release preparation compares against API digests and accepts metadata in a
   await assert.rejects(fs.stat(rejected.destinationDir), { code: 'ENOENT' });
   const accepted = await downloaded(t);
   accepted.artifacts.reverse();
-  assert.equal((await prepareReleaseAssets(accepted)).length, 8);
+  assert.equal((await prepareReleaseAssets(accepted)).length, 9);
 });
 
 test('release preparation requires a validated build commit', async t => {

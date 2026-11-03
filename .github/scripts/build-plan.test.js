@@ -4,16 +4,19 @@ const { coreTargets, guiTargets, androidArchs, buildPlan } = require('./build-co
 const prepare = require('./prepare-build.js');
 const { expectedJobs, checkResults } = require('./check-build-results.js');
 
-test('PC builds only Linux/macOS/Windows x86-64; Android builds ARM64 only', () => {
-  assert.equal(coreTargets.length, 3);
+test('PC builds Linux x86-64/ARM64 and macOS/Windows x86-64; Android builds ARM64 only', () => {
+  assert.equal(coreTargets.length, 4);
   assert.equal(guiTargets.length, 2);
-  assert.equal(new Set(coreTargets.map(t => t.target)).size, 3);
+  assert.equal(new Set(coreTargets.map(t => t.target)).size, 4);
   assert.equal(new Set(guiTargets.map(t => t.target)).size, 2);
   assert.deepEqual(androidArchs, ['aarch64']);
   assert.deepEqual(guiTargets.map(t => t.name).sort(), [
     'macos-x86_64', 'windows-x86_64',
   ]);
-  assert.ok([...coreTargets, ...guiTargets].every(t => t.target.startsWith('x86_64-')));
+  assert.ok(guiTargets.every(t => t.target.startsWith('x86_64-')));
+  assert.deepEqual(coreTargets.filter(t => !t.target.startsWith('x86_64-')).map(t => t.target),
+    ['aarch64-unknown-linux-musl']);
+  assert.equal(coreTargets.find(t => t.name === 'linux-aarch64').os, 'ubuntu-24.04-arm');
   assert.ok([...coreTargets, ...guiTargets].every(t => !/freebsd|ohos|magisk/.test(t.target)));
   assert.equal(coreTargets.find(t => t.name === 'macos-x86_64').os, 'macos-15-intel');
 });

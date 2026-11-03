@@ -33,6 +33,13 @@ if [[ "$TARGET" == x86_64-unknown-linux-musl ]]; then
   done
 fi
 
+if [[ "$TARGET" == aarch64-unknown-linux-musl ]]; then
+  for binary in artifacts/easytier-*; do
+    file "$binary"
+    "$binary" --help > /dev/null
+  done
+fi
+
 if [[ "$TARGET" == *windows* ]]; then
   bash .github/scripts/copy-windows-drivers.sh "$TARGET" artifacts
 else

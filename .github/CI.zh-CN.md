@@ -26,7 +26,7 @@ PR/develop 按相关路径检查，Go、JavaScript Hosts、Nix 保留独立路�
 
 | 产物 | 目标 / 可下载产物数量 |
 | --- | --- |
-| Core/CLI/Web | Linux、macOS、Windows，仅 x86-64 / 3 |
+| Core/CLI/Web | Linux x86-64/ARM64（aarch64），macOS、Windows x86-64 / 4 |
 | 桌面 GUI | macOS、Windows，仅 x86-64 / 2 |
 | Android APK | 仅 ARM64 手机，aarch64（arm64-v8a）/ 1 |
 
@@ -59,6 +59,7 @@ main 推送时由 EasyTier Build 正式编译这些目标，省去重复预检�
 | 下载文件 | 内容 |
 | --- | --- |
 | `easytier-linux-x86_64.tar.gz` | 命令行程序、提交记录及校验和 |
+| `easytier-linux-aarch64.tar.gz` | Linux ARM64 命令行程序、提交记录及校验和 |
 | `easytier-macos-x86_64.tar.gz` | 命令行程序、提交记录及校验和 |
 | `easytier-windows-x86_64.zip` | 命令行程序、网络驱动、提交记录及校验和 |
 | `easytier-gui-windows-x86_64.exe` | Windows GUI 安装程序 |

@@ -1,6 +1,8 @@
 // One source of truth for build matrices and release artifact validation.
 const coreTargets = [
   ['x86_64-unknown-linux-musl', 'ubuntu-24.04', 'linux-x86_64'],
+  // Native ARM64 runner avoids cross-compiling jemalloc and other C dependencies.
+  ['aarch64-unknown-linux-musl', 'ubuntu-24.04-arm', 'linux-aarch64'],
   ['x86_64-apple-darwin', 'macos-15-intel', 'macos-x86_64'],
   ['x86_64-pc-windows-msvc', 'windows-latest', 'windows-x86_64'],
 ].map(([target, os, name]) => ({
@@ -12,7 +14,8 @@ const guiTargets = coreTargets
   .filter(({ target }) => /windows|darwin/.test(target))
   .map(({ target, os, name }) => ({ target, os, name }));
 const androidArchs = ['aarch64'];
-const checkTargets = coreTargets;
+// Lightweight PR checks stay on x86-64; ARM64 Linux is covered by the full CLI build.
+const checkTargets = coreTargets.filter(({ target }) => target.startsWith('x86_64-'));
 
 const infrastructure = /^(\.github\/(workflows\/|tauri-ci\.json$|actions\/|scripts\/)|package\.json$)/;
 const rustPaths = /^(Cargo\.(toml|lock)$|rust-toolchain\.toml$|\.cargo\/|\.config\/nextest\.toml$|easytier\/|easytier-core\/|easytier-proto\/|easytier-rpc-build\/|easytier-web\/|easytier-gui\/|tauri-plugin-vpnservice\/|easytier-contrib\/)/;

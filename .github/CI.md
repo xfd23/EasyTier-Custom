@@ -28,7 +28,7 @@ FreeBSD builds and Linux GUI installers are removed. Platform source remains.
 
 | Product | Targets / downloadable artifact count |
 | --- | --- |
-| Core/CLI/Web | Linux, macOS and Windows, x86-64 only / 3 |
+| Core/CLI/Web | Linux x86-64/ARM64 (aarch64), macOS and Windows x86-64 / 4 |
 | Desktop GUI | macOS and Windows, x86-64 only / 2 |
 | Android APK | ARM64 phones only: aarch64 (arm64-v8a) / 1 |
 
@@ -72,6 +72,7 @@ unarchived uploads (`actions/upload-artifact@v7`, `archive: false`):
 | Download | Contents |
 | --- | --- |
 | `easytier-linux-x86_64.tar.gz` | Command-line programs, commit and checksums |
+| `easytier-linux-aarch64.tar.gz` | Linux ARM64 command-line programs, commit and checksums |
 | `easytier-macos-x86_64.tar.gz` | Command-line programs, commit and checksums |
 | `easytier-windows-x86_64.zip` | Command-line programs, network drivers, commit and checksums |
 | `easytier-gui-windows-x86_64.exe` | Windows GUI installer |
