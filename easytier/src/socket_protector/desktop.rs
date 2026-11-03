@@ -59,18 +59,39 @@ pub(crate) fn active() -> bool {
         .is_empty()
 }
 
+/// Identifies the socket's network namespace independently of the calling
+/// Tokio worker's current namespace. All identifiers in one process come from
+/// the same method, because the kernel's capabilities never change at runtime.
 #[cfg(target_os = "linux")]
 fn namespace(socket: &socket2::Socket) -> io::Result<u64> {
+    use std::sync::atomic::{AtomicBool, Ordering};
+    // Set once the kernel reports that SO_NETNS_COOKIE is unavailable.
+    static COOKIE_UNSUPPORTED: AtomicBool = AtomicBool::new(false);
+    if !COOKIE_UNSUPPORTED.load(Ordering::Relaxed) {
+        match netns_cookie(socket) {
+            Ok(cookie) => return Ok(cookie),
+            Err(error) if error.raw_os_error() == Some(libc::ENOPROTOOPT) => {
+                tracing::debug!("SO_NETNS_COOKIE unsupported (Linux < 5.14); using SIOCGSKNS");
+                COOKIE_UNSUPPORTED.store(true, Ordering::Relaxed);
+            }
+            Err(error) => return Err(error),
+        }
+    }
+    netns_inode(socket)
+}
+
+/// getsockopt(SO_NETNS_COOKIE) is only available since Linux 5.14.
+#[cfg(target_os = "linux")]
+fn netns_cookie(socket: &socket2::Socket) -> io::Result<u64> {
     use std::os::fd::AsRawFd;
+    const SO_NETNS_COOKIE: libc::c_int = 71;
     let mut cookie = 0_u64;
     let mut len = std::mem::size_of_val(&cookie) as libc::socklen_t;
-    // SO_NETNS_COOKIE is stable since Linux 5.2 and identifies the socket's
-    // namespace independently of the calling Tokio worker's current namespace.
     let result = unsafe {
         libc::getsockopt(
             socket.as_raw_fd(),
             libc::SOL_SOCKET,
-            71,
+            SO_NETNS_COOKIE,
             (&mut cookie as *mut u64).cast(),
             &mut len,
         )
@@ -79,6 +100,27 @@ fn namespace(socket: &socket2::Socket) -> io::Result<u64> {
         return Err(io::Error::last_os_error());
     }
     Ok(cookie)
+}
+
+/// Fallback for older kernels: ioctl(SIOCGSKNS) (Linux 4.9+) opens the
+/// socket's namespace, whose nsfs inode number uniquely identifies it.
+/// Kernels without it (or without CONFIG_NET_NS) only have one usable
+/// namespace for this purpose, so a constant identifier is used.
+#[cfg(target_os = "linux")]
+fn netns_inode(socket: &socket2::Socket) -> io::Result<u64> {
+    use std::os::fd::{AsRawFd, FromRawFd, OwnedFd};
+    const SIOCGSKNS: libc::c_ulong = 0x894C;
+    let fd = unsafe { libc::ioctl(socket.as_raw_fd(), SIOCGSKNS as _) };
+    if fd < 0 {
+        let error = io::Error::last_os_error();
+        return match error.raw_os_error() {
+            Some(libc::ENOTTY | libc::EINVAL | libc::EOPNOTSUPP) => Ok(0),
+            _ => Err(error),
+        };
+    }
+    let ns = std::fs::File::from(unsafe { OwnedFd::from_raw_fd(fd) });
+    use std::os::unix::fs::MetadataExt as _;
+    Ok(ns.metadata()?.ino())
 }
 
 #[cfg(not(target_os = "linux"))]
