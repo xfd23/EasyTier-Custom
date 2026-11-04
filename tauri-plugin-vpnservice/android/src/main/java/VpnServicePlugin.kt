@@ -14,6 +14,13 @@ import app.tauri.plugin.Invoke
 import app.tauri.plugin.JSObject
 import app.tauri.plugin.Plugin
 import android.webkit.WebView
+import org.json.JSONArray
+
+// JSObject (org.json) does not convert Java arrays: put() would serialize them
+// with toString() ("[Ljava.lang.String;@..."), so the frontend must receive a
+// real JSON array instead.
+internal fun Array<String>.toJsonArray(): JSONArray = JSONArray(this.toList())
+internal fun Collection<String>.toJsonArray(): JSONArray = JSONArray(this.toList())
 
 @InvokeArg
 class PingArgs {
@@ -169,9 +176,9 @@ class VpnServicePlugin(private val activity: Activity) : Plugin(activity) {
     fun getVpnStatus(invoke: Invoke) {
         val ret = JSObject()
         ret.put("running", TauriVpnService.self != null)
-        ret.put("ipv4Addrs", TauriVpnService.ipv4Addrs)
-        ret.put("routes", TauriVpnService.routes)
-        ret.put("dnsServers", TauriVpnService.dnsServers)
+        ret.put("ipv4Addrs", TauriVpnService.ipv4Addrs.toJsonArray())
+        ret.put("routes", TauriVpnService.routes.toJsonArray())
+        ret.put("dnsServers", TauriVpnService.dnsServers.toJsonArray())
         ret.put("generation", TauriVpnService.generation)
         ret.put("generationHighWater", TauriVpnService.getGenerationHighWater(activity))
         invoke.resolve(ret)
@@ -195,12 +202,12 @@ class VpnServicePlugin(private val activity: Activity) : Plugin(activity) {
                     systemDnsServers.add(server.substringBefore('%'))
                 }
             }
-            ret.put("dnsServers", dnsServers.toTypedArray())
-            ret.put("systemDnsServers", systemDnsServers.toTypedArray())
+            ret.put("dnsServers", dnsServers.toJsonArray())
+            ret.put("systemDnsServers", systemDnsServers.toJsonArray())
         } catch (error: Exception) {
             ret.put("errorMsg", error.message ?: error.toString())
-            ret.put("dnsServers", emptyArray<String>())
-            ret.put("systemDnsServers", emptyArray<String>())
+            ret.put("dnsServers", JSONArray())
+            ret.put("systemDnsServers", JSONArray())
         }
         invoke.resolve(ret)
     }

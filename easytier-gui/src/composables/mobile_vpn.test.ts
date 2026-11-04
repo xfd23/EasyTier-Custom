@@ -178,6 +178,22 @@ beforeEach(() => {
 })
 
 describe('mobile VPN reconciliation', () => {
+  it('ignores non-array native payloads instead of splitting them into characters', async () => {
+    // Older plugin builds serialized Java arrays with toString().
+    mocks.getUnderlyingDnsServers.mockResolvedValue({
+      dnsServers: '[Ljava.lang.String;@be57b70',
+      systemDnsServers: '[Ljava.lang.String;@be57b71',
+    } as any)
+    setConfig('A')
+    setReady('A', '10.0.0.1')
+    const vpn = await loadVpnModule()
+    await vpn.onNetworkInstanceChange('A')
+    expect(mocks.startVpn).toHaveBeenCalledWith(expect.objectContaining({
+      ipv4Addrs: ['10.0.0.1/24'],
+      dnsServers: [],
+    }))
+  })
+
   it('starts an IPv6-only VPN after DHCPv6 becomes ready', async () => {
     setConfig('A')
     mocks.configs.get('A')!.dhcpv6 = true

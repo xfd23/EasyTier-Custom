@@ -24,6 +24,12 @@ interface vpnStatus {
   policyGeneration: string | undefined
 }
 
+// Native plugin payloads cross a JSON bridge; never treat a non-array (for
+// example a stringified Java array) as a list, or a string splits into chars.
+function stringArray(value: unknown): string[] {
+  return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : []
+}
+
 let vpnReconcileTimer: ReturnType<typeof setTimeout> | null = null
 const VPN_RECONCILE_INTERVAL_MS = 2000
 const VPN_RECONCILE_MAX_ATTEMPTS = 60
@@ -233,9 +239,9 @@ function syncVpnStatusFromNative(status: Awaited<ReturnType<typeof get_vpn_statu
     return
   }
 
-  curVpnStatus.ipv4Addrs = [...(status?.ipv4Addrs ?? [])]
-  curVpnStatus.routes = [...(status?.routes ?? [])]
-  curVpnStatus.dnsServers = [...(status?.dnsServers ?? [])]
+  curVpnStatus.ipv4Addrs = stringArray(status?.ipv4Addrs)
+  curVpnStatus.routes = stringArray(status?.routes)
+  curVpnStatus.dnsServers = stringArray(status?.dnsServers)
   curVpnStatus.generation = status?.generation ?? undefined
 }
 
@@ -357,7 +363,8 @@ function scheduleVpnTunRetry(payload: any, attempt: number) {
 
 async function attachVpnTun(payload: any, attempt = 0) {
   const generation = String(payload?.generation ?? '')
-  const instanceIds: string[] = payload?.instanceIds ?? vpnStartingInstanceIds ?? []
+  const payloadInstanceIds = stringArray(payload?.instanceIds)
+  const instanceIds: string[] = payloadInstanceIds.length ? payloadInstanceIds : vpnStartingInstanceIds ?? []
   if (!generation || !instanceIds.length || generation !== curVpnStatus.generation || !payload?.fd)
     return
 
@@ -565,7 +572,7 @@ async function reconcileNetworkInstance(generation: number) {
   try {
     const dns = await get_underlying_dns_servers()
     if (dns.errorMsg) throw new Error(dns.errorMsg)
-    dnsServers = config.dns ? [config.dns] : [...new Set(dns.dnsServers)].sort()
+    dnsServers = config.dns ? [config.dns] : [...new Set(stringArray(dns.dnsServers))].sort()
     const policies = await Promise.all(instanceIds.map(async (id) => {
       const policy = await getVpnStatus(id)
       if (!policy) throw new Error(`VPN policy unavailable: ${id}`)

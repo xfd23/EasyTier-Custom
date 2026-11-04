@@ -76,7 +76,7 @@ class TauriVpnService : VpnService() {
         if (generation == null || generation <= 0) {
             val eventData = JSObject()
             eventData.put("generation", generationText ?: "")
-            eventData.put("instanceIds", instanceIds)
+            eventData.put("instanceIds", instanceIds.toJsonArray())
             eventData.put("error", "Invalid VPN generation")
             triggerCallback("vpn_service_error", eventData)
             return START_STICKY
@@ -107,12 +107,12 @@ class TauriVpnService : VpnService() {
             val eventData = JSObject()
             eventData.put("fd", candidate.fd)
             eventData.put("generation", generation.toString())
-            eventData.put("instanceIds", instanceIds)
+            eventData.put("instanceIds", instanceIds.toJsonArray())
             triggerCallback("vpn_service_start", eventData)
         } catch (error: Exception) {
             val eventData = JSObject()
             eventData.put("generation", generation.toString())
-            eventData.put("instanceIds", instanceIds)
+            eventData.put("instanceIds", instanceIds.toJsonArray())
             eventData.put("error", error.message ?: error.toString())
             triggerCallback("vpn_service_error", eventData)
             println("vpn interface configuration failed generation=$generation: $error")
